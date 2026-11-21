@@ -1,8 +1,8 @@
 # KeyHelp Kernel Firewall & IPSet Ban (AbuseIPDB & FireHOL)
 
 Fast kernel-level IP blocking via IPSet for KeyHelp servers, including a live status dashboard widget for blocked IPs, traffic volume, and intercepted packets.
-
-> **Note:** If you do not want the status widget in the KeyHelp dashboard, complete **Step 1** and jump straight to **Step 4 (Fail2Ban & IPSet)**.
+> [!NOTE]
+> If you do not want the status widget in the KeyHelp dashboard, complete **Step 1** and jump straight to **Step 4 (Fail2Ban & IPSet)**.
 
 <img width="837" height="296" alt="Screenshot 2026-11-21 130655" src="https://github.com/user-attachments/assets/0bdddd5c-09d9-4cad-adbf-ef8d5e3abb2e" />
 
@@ -13,9 +13,9 @@ Fast kernel-level IP blocking via IPSet for KeyHelp servers, including a live st
 >   * **OS & Memory:** Ubuntu or Debian with `systemd` and kernel `ipset` (`hash:net`) support, at least **1 GB RAM** recommended.
 >   * **Tools & Access:** Root privileges, outbound internet access, and the `ipset`, `iptables`, and `wget` packages installed.
 >   * **KeyHelp:** Optional – only needed for KeyHelp-specific integration and status files (see screenshot above).
-> * **Blocklists & Filtering:** `loadlist.sh` fetches `abuseipdb-s100-3d.ipv4` (borestad) and `firehol_level1.netset` (FireHOL) and filters out loopback (`127.*`) and private (`172.16.0.0/12`) ranges[cite: 4].
-> * **Kernel IPSet & 7-Day Timeout:** `loadlist.sh` creates `f2b-iplistblock` (`hash:net`) with `maxelem 1000000` and `timeout 604800` (7 days) directly in the kernel without needing Fail2Ban[cite: 4]. If an `f2b-iplistblock` set without a timeout already exists, run `***ipset destroy f2b-iplistblock***` once beforehand[cite: 4].
-> * **Firewall & DHCP:** The script automatically adds the `INPUT` `DROP` rule for `f2b-iplistblock` and allows DHCP traffic (UDP `67`/`68`) so lease renewals are not blocked[cite: 4].
+> * **Blocklists & Filtering:** `loadlist.sh` fetches `abuseipdb-s100-3d.ipv4` (borestad) and `firehol_level1.netset` (FireHOL) and filters out loopback (`127.*`) and private (`172.16.0.0/12`) ranges.
+> * **Kernel IPSet & 7-Day Timeout:** `loadlist.sh` creates `f2b-iplistblock` (`hash:net`) with `maxelem 1000000` and `timeout 604800` (7 days) directly in the kernel without needing Fail2Ban. If an `f2b-iplistblock` set without a timeout already exists, run `ipset destroy f2b-iplistblock` once beforehand.
+> * **Firewall & DHCP:** The script automatically adds the `INPUT` `DROP` rule for `f2b-iplistblock` and allows DHCP traffic (UDP `67`/`68`) so lease renewals are not blocked.
 > * **Persistent Stats:** `live_status.sh` stores cumulative and daily counters in `/root/banip/` (`.persistent_total`, `.daily_bytes_start`, `f2b_status.txt`) and copies `f2b_status.txt` to `/home/keyhelp/www/keyhelp/f2b_status.txt` with `chmod 644`.
 
 ## 1. Create Directory & Download Scripts
@@ -271,12 +271,12 @@ systemctl enable loadlist-boot.service
 systemctl start loadlist-boot.service
 systemctl status loadlist-boot.service --no-pager
 ```
-
-Optional check to verify that the kernel IPSet is active with `maxelem 1000000` and `timeout 604800`:
-
-```bash
-ipset list f2b-iplistblock | head -n 10
-```
+> [!TIP]
+> Optional check to verify that the kernel IPSet is active with `maxelem 1000000` and `timeout 604800`:
+>
+> ```bash
+> ipset list f2b-iplistblock | head -n 10
+> ```
 
 ## 5. Set Up Daily Cron Job in KeyHelp
 
