@@ -233,39 +233,47 @@ if ('admin_dashboard' === getUrlQueryParameterValue('page')) {
 
 ---
 
-## 4. Create Fail2Ban Filter and Jail
+### 4. Set Up Boot Service (`loadlist-boot.service`)
 
-Create the filter file:
+Since `/root/banip/loadlist.sh` creates and manages the kernel IPSet `f2b-iplistblock` (`hash:net`, `maxelem 1000000`, `timeout 604800` = 7 days) as well as the `iptables` rules directly, no Fail2Ban filter or jail is required. To ensure the blocklist is loaded automatically after a server reboot, create a `systemd` oneshot service.
+
+Create the service file:
 
 ```bash
-nano /etc/fail2ban/filter.d/iplistblock.conf
+nano /etc/systemd/system/loadlist-boot.service
 ```
 
 Paste the following content and save the file (`Ctrl+O`, `Enter`, `Ctrl+X`):
 
 ```ini
-[Definition]
-failregex = 
-ignoreregex = 
+[Unit]
+Description=Load IP Blocklist at Boot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /root/banip/loadlist.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-Create the jail file:
+Reload `systemd`, enable the service at boot, and verify its status:
 
 ```bash
-nano /etc/fail2ban/jail.d/iplistblock.conf
+systemctl daemon-reload
+systemctl enable loadlist-boot.service
+systemctl start loadlist-boot.service
+systemctl status loadlist-boot.service --no-pager
 ```
 
-Paste the following content and save the file (`Ctrl+O`, `Enter`, `Ctrl+X`):
+Optional check to verify that the kernel IPSet is active with `maxelem 1000000` and `timeout 604800`:
 
-```ini
-[iplistblock]
-enabled = true
-filter = iplistblock
-banaction = iptables-ipset[name=iplistblock, port="all", protocol="tcp", maxelem=250000]
-bantime = 4w
+```bash
+ipset list f2b-iplistblock | head -n 10
 ```
-
----
 
 ## 5. Set Up Daily Cron Job in KeyHelp
 
@@ -289,3 +297,9 @@ bash /root/banip/loadlist.sh
 ```
 
 Everything will now run automatically. Once the blocklists have been fetched and imported, the blocked IPs, packet counts, and traffic stats will appear on your KeyHelp dashboard. Enjoy!
+
+## Changelog
+
+### v1.3.0 (2026-11-21)
+- **Removed Fail2Ban Requirement**: Replaced the Fail2Ban filter and jail setup (`[iplistblock]`) with direct kernel IPSet management via `loadlist.sh` (`hash:net`, `maxelem 1000000`, `timeout 604800` for automatic 7-day expiration).
+- **Added Boot Service (`loadlist-boot.service`)**: Added documentation and setup instructions for the `systemd` oneshot service to automatically load the IP blocklist into the kernel on server reboot.
