@@ -4,6 +4,8 @@ Fast kernel-level IP blocking via IPSet for KeyHelp servers, including a live st
 
 > **Note:** If you do not want the status widget in the KeyHelp dashboard, complete **Step 1** and jump straight to **Step 4 (Fail2Ban & IPSet)**.
 
+<img width="837" height="296" alt="Screenshot 2026-11-21 130655" src="https://github.com/user-attachments/assets/0bdddd5c-09d9-4cad-adbf-ef8d5e3abb2e" />
+
 ---
 
 ## 1. Create Directory & Download Scripts
