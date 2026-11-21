@@ -12,8 +12,8 @@ Fast kernel-level IP blocking via IPSet for KeyHelp servers, including a live st
 mkdir -p /root/banip
 cd /root/banip
 
-wget [https://github.com/NicoMSH-plugins/keyhelp-kernel-ipset-firewall/releases/download/1.3.0/live_status.sh](https://github.com/NicoMSH-plugins/keyhelp-kernel-ipset-firewall/releases/download/1.3.0/live_status.sh)
-wget [https://github.com/NicoMSH-plugins/keyhelp-kernel-ipset-firewall/releases/download/1.3.0/loadlist.sh](https://github.com/NicoMSH-plugins/keyhelp-kernel-ipset-firewall/releases/download/1.3.0/loadlist.sh)
+wget https://github.com/NicoMSH-plugins/keyhelp-kernel-ipset-firewall/releases/download/1.3.0/live_status.sh
+wget https://github.com/NicoMSH-plugins/keyhelp-kernel-ipset-firewall/releases/download/1.3.0/loadlist.sh
 
 chmod +x /root/banip/live_status.sh /root/banip/loadlist.sh
 ```
