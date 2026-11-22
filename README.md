@@ -347,4 +347,4 @@ Everything will now run automatically. Once the blocklists have been fetched and
 #### v1.3.0 (2026-11-22)
 - **Light & Dark Mode Support**: Added automatic theme detection based on background luminance so the dashboard widget renders with clear contrast in both Light and Dark mode.
 - **Updated Traffic Labels**: Clarified traffic labels to explicitly reflect blocked traffic (`Blocked Traffic Total` / `Blocked Traffic Today`).
-
+</details>
