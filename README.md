@@ -338,10 +338,13 @@ bash /root/banip/loadlist.sh
 Everything will now run automatically. Once the blocklists have been fetched and imported, the blocked IPs, packet counts, and traffic stats will appear on your KeyHelp dashboard. Enjoy!
 
 ## Changelog
+<details>
+<summary><b>Show / Expand Changelog History</b></summary>
 
-### v1.3.0 (2026-11-21)
+#### v1.3.0 (2026-11-21)
 - **Removed Fail2Ban Requirement**: Replaced the Fail2Ban filter and jail setup (`[iplistblock]`) with direct kernel IPSet management via `loadlist.sh` (`hash:net`, `maxelem 1000000`, `timeout 604800` for automatic 7-day expiration).
 - **Added Boot Service (`loadlist-boot.service`)**: Added documentation and setup instructions for the `systemd` oneshot service to automatically load the IP blocklist into the kernel on server reboot.
-### v1.3.0 (2026-11-22)
+#### v1.3.0 (2026-11-22)
 - **Light & Dark Mode Support**: Added automatic theme detection based on background luminance so the dashboard widget renders with clear contrast in both Light and Dark mode.
 - **Updated Traffic Labels**: Clarified traffic labels to explicitly reflect blocked traffic (`Blocked Traffic Total` / `Blocked Traffic Today`).
+
