@@ -99,136 +99,172 @@ systemctl start f2b-status.service
 // ====================================================
 // 🛡️ ABANDONED/LIVE ABUSEIPDB & KERNEL IPSET STATUS BOX
 // ====================================================
-if ('admin_dashboard' === getUrlQueryParameterValue('page')) {
-    $(function() {
-        let $portTable = $('table').filter(function() {
-            let htmlText = $(this).text();
-            return htmlText.includes('FTP') && htmlText.includes('SSH');
-        }).first();
-
-        if (!$portTable.length) {
-            $portTable = $('table').filter(function() {
-                return $(this).find('.fa-network-wired, .fa-server, .fa-desktop').length > 0;
-            }).first();
+if ('admin_dashboard' === (typeof getUrlQueryParameterValue === 'function' ? getUrlQueryParameterValue('page') : new URLSearchParams(window.location.search).get('page'))) {
+    (function startAbuseBox() {
+        if (!window.jQuery) {
+            setTimeout(startAbuseBox, 50);
+            return;
         }
-        let $portCard = $portTable.closest('.card, .box');
 
-        // Language and loading detection via HTML header
-        let htmlLang = $('html').attr('lang') || '';
-        let isGerman = htmlLang.toLowerCase().startsWith('de');
+        window.jQuery(function($) {
+            if ($('#abuseipdb-status-card').length) return;
 
-        let txtLoading = isGerman ? 'Lade Live-Daten...' : 'Loading live data...';
+            function isLightThemeActive() {
+                const targets = [document.body, document.documentElement];
+                for (const el of targets) {
+                    if (!el) continue;
+                    const bg = window.getComputedStyle(el).backgroundColor;
+                    const match = bg && bg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+                    if (match) {
+                        const r = Number(match[1]), g = Number(match[2]), b = Number(match[3]);
+                        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                        if (luminance > 0.62) return true;
+                        if (luminance <= 0.62 && (r + g + b) > 0) return false;
+                    }
+                }
+                return false;
+            }
 
-        let $abuseBox = $(`
-            <div class="card mt-5 mb-5" id="abuseipdb-status-card" style="margin-top: 1.5rem !important; margin-bottom: 1.5rem !important;">
-                <header class="card-header">
-                    <span class="card-header-icon">
-                        <i class="fas fa-shield-alt" style="color: #3273dc;"></i>
-                    </span>
-                    <p class="card-header-title">AbuseIPDB & Kernel-Firewall (IPSet)</p>
-                </header>
-                <div class="card-content">
-                    <div id="abuseipdb-status-content" class="columns is-multiline is-mobile">
-                        <div class="column is-12 has-text-grey">${txtLoading}</div>
+            let $portTable = $('table').filter(function() {
+                let htmlText = $(this).text();
+                return htmlText.includes('FTP') && htmlText.includes('SSH');
+            }).first();
+
+            if (!$portTable.length) {
+                $portTable = $('table').filter(function() {
+                    return $(this).find('.fa-network-wired, .fa-server, .fa-desktop').length > 0;
+                }).first();
+            }
+            let $portCard = $portTable.closest('.card, .box');
+
+            let htmlLang = $('html').attr('lang') || '';
+            let isGerman = htmlLang.toLowerCase().startsWith('de');
+            let txtLoading = isGerman ? 'Lade Live-Daten...' : 'Loading live data...';
+
+            let $abuseBox = $(`
+                <div class="card mt-5 mb-5" id="abuseipdb-status-card" style="margin-top: 1.5rem !important; margin-bottom: 1.5rem !important;">
+                    <header class="card-header">
+                        <span class="card-header-icon">
+                            <i class="fas fa-shield-alt" style="color: #3273dc;"></i>
+                        </span>
+                        <p class="card-header-title">AbuseIPDB & Kernel-Firewall (IPSet)</p>
+                    </header>
+                    <div class="card-content">
+                        <div id="abuseipdb-status-content" class="columns is-multiline is-mobile">
+                            <div class="column is-12 has-text-grey">${txtLoading}</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `);
+            `);
 
-        if ($portCard.length) {
-            $portCard.before($abuseBox);
-        }
-
-        let txt = isGerman ? {
-            ips: "Gesperrte IPs",
-            total: "Datenverkehr Gesamt",
-            daily: "Datenverkehr Heute",
-            packets: "Abgefangene / Blockierte Pakete",
-            update: "Letztes Update"
-        } : {
-            ips: "Blocked IPs",
-            total: "Total Traffic",
-            daily: "Traffic Today",
-            packets: "Intercepted / Blocked Packets",
-            update: "Last Update"
-        };
-
-        function updateAbuseStatus() {
-            $.get('f2b_status.txt', function(rawText) {
-                let parts = rawText.split('|');
-
-                let ips = '0';
-                let total = '0 Bytes';
-                let daily = '0 Bytes';
-                let packets = '0';
-                let upd = '-';
-
-                try {
-                    if (parts.length >= 4) {
-                        ips = parts[0].replace(/[^0-9]/g, '');
-                        total = parts[1].replace('Gesamt:', '').trim();
-                        
-                        let dailyPart = parts[2];
-                        if (dailyPart && dailyPart.includes(':')) {
-                            daily = dailyPart.split(':')[1].replace('(Pakete', '').trim();
-                        }
-                        
-                        let packetMatch = rawText.match(/Pakete:\s*([0-9]+)/);
-                        if (packetMatch) {
-                            packets = packetMatch[1];
-                        }
-
-                        let updMatch = rawText.match(/Upd:\s*(.*)/);
-                        if (updMatch) {
-                            upd = updMatch[1].trim();
-                        }
-                    } else {
-                        ips = rawText;
-                    }
-                } catch (e) {
-                    console.error("Error parsing status:", e);
+            if ($portCard.length) {
+                $portCard.before($abuseBox);
+            } else {
+                let $fallbackCard = $('.app-content .card, #content .card').last();
+                if ($fallbackCard.length) {
+                    $fallbackCard.after($abuseBox);
                 }
+            }
 
-                let html = `
-                    <div class="column is-12-mobile is-4-tablet">
-                        <div class="p-5" style="background: rgba(50, 115, 220, 0.05); border-radius: 6px; border-left: 4px solid #3273dc;">
-                            <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-ban mr-1"></i> ${txt.ips}</div>
-                            <div class="is-size-4 has-text-weight-bold mt-2" style="color: #3273dc; padding-left: 15px !important;">${ips}</div>
-                        </div>
-                    </div>
-                    <div class="column is-12-mobile is-4-tablet">
-                        <div class="p-5" style="background: rgba(72, 199, 116, 0.05); border-radius: 6px; border-left: 4px solid #48c774;">
-                            <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-database mr-1"></i> ${txt.total}</div>
-                            <div class="is-size-4 has-text-weight-bold mt-2" style="color: #48c774; padding-left: 15px !important;">${total}</div>
-                        </div>
-                    </div>
-                    <div class="column is-12-mobile is-4-tablet">
-                        <div class="p-5" style="background: rgba(255, 221, 87, 0.05); border-radius: 6px; border-left: 4px solid #ffdd57;">
-                            <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-chart-line mr-1"></i> ${txt.daily}</div>
-                            <div class="is-size-4 has-text-weight-bold mt-2" style="color: #ffdd57; padding-left: 15px !important;">${daily}</div>
-                        </div>
-                    </div>
-                    <div class="column is-12">
-                        <div class="p-5" style="background: rgba(255, 56, 96, 0.05); border-radius: 6px; border-left: 4px solid #ff3860;">
-                            <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-box mr-1"></i> ${txt.packets}</div>
-                            <div class="is-size-4 has-text-weight-bold mt-2" style="color: #ff3860; padding-left: 15px !important;">${packets}</div>
-                        </div>
-                    </div>
-                    <div class="column is-12 has-text-right pt-0 pb-0">
-                        <span class="is-size-7 has-text-grey"><i class="far fa-clock mr-1"></i> ${txt.update}: ${upd}</span>
-                    </div>
-                `;
+            let txt = isGerman ? {
+                ips: "Gesperrte IPs",
+                total: "Geblockter Datenverkehr Gesamt",
+                daily: "Geblockter Datenverkehr Heute",
+                packets: "Abgefangene / Blockierte Pakete",
+                update: "Letztes Update",
+                parseErr: "Status-Datei konnte nicht geladen werden."
+            } : {
+                ips: "Blocked IPs",
+                total: "Blocked Traffic Total",
+                daily: "Blocked Traffic Today",
+                packets: "Intercepted / Blocked Packets",
+                update: "Last Update",
+                parseErr: "Could not load status file."
+            };
 
-                $('#abuseipdb-status-content').html(html);
-            }).fail(function() {
-                let errText = isGerman ? "Status-Datei konnte nicht geladen werden." : "Could not load status file.";
-                $('#abuseipdb-status-content').html(`<div class="column is-12 has-text-danger">${errText}</div>`);
-            });
-        }
+            function updateAbuseStatus() {
+                $.get('f2b_status.txt?_=' + Date.now(), function(rawText) {
+                    let parts = rawText.split('|');
 
-        updateAbuseStatus();
-        setInterval(updateAbuseStatus, 60000);
-    });
+                    let ips = '0';
+                    let total = '0 Bytes';
+                    let daily = '0 Bytes';
+                    let packets = '0';
+                    let upd = '-';
+
+                    try {
+                        if (parts.length >= 4) {
+                            ips = parts[0].replace(/[^0-9]/g, '');
+                            total = parts[1].replace('Gesamt:', '').trim();
+
+                            let dailyPart = parts[2];
+                            if (dailyPart && dailyPart.includes(':')) {
+                                daily = dailyPart.split(':')[1].replace('(Pakete', '').trim();
+                            }
+
+                            let packetMatch = rawText.match(/Pakete:\s*([0-9]+)/);
+                            if (packetMatch) {
+                                packets = packetMatch[1];
+                            }
+
+                            let updMatch = rawText.match(/Upd:\s*(.*)/);
+                            if (updMatch) {
+                                upd = updMatch[1].trim();
+                            }
+                        } else {
+                            ips = rawText;
+                        }
+                    } catch (e) {
+                        console.error("Fehler beim Parsen des Status:", e);
+                    }
+
+                    const light = isLightThemeActive();
+                    const cBlue   = light ? '#1d4ed8' : '#3273dc';
+                    const cGreen  = light ? '#15803d' : '#48c774';
+                    const cYellow = light ? '#b45309' : '#ffdd57';
+                    const cRed    = light ? '#dc2626' : '#ff3860';
+                    const bgAlpha = light ? '0.08' : '0.05';
+
+                    let html = `
+                        <div class="column is-12-mobile is-4-tablet">
+                            <div class="p-5" style="background: rgba(50, 115, 220, ${bgAlpha}); border-radius: 6px; border-left: 4px solid ${cBlue};">
+                                <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-ban mr-1"></i> ${txt.ips}</div>
+                                <div class="is-size-4 has-text-weight-bold mt-2" style="color: ${cBlue}; padding-left: 15px !important;">${ips}</div>
+                            </div>
+                        </div>
+                        <div class="column is-12-mobile is-4-tablet">
+                            <div class="p-5" style="background: rgba(72, 199, 116, ${bgAlpha}); border-radius: 6px; border-left: 4px solid ${cGreen};">
+                                <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-database mr-1"></i> ${txt.total}</div>
+                                <div class="is-size-4 has-text-weight-bold mt-2" style="color: ${cGreen}; padding-left: 15px !important;">${total}</div>
+                            </div>
+                        </div>
+                        <div class="column is-12-mobile is-4-tablet">
+                            <div class="p-5" style="background: rgba(217, 119, 6, ${bgAlpha}); border-radius: 6px; border-left: 4px solid ${cYellow};">
+                                <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-chart-line mr-1"></i> ${txt.daily}</div>
+                                <div class="is-size-4 has-text-weight-bold mt-2" style="color: ${cYellow}; padding-left: 15px !important;">${daily}</div>
+                            </div>
+                        </div>
+                        <div class="column is-12">
+                            <div class="p-5" style="background: rgba(255, 56, 96, ${bgAlpha}); border-radius: 6px; border-left: 4px solid ${cRed};">
+                                <div class="is-size-7 has-text-grey text-uppercase"><i class="fas fa-box mr-1"></i> ${txt.packets}</div>
+                                <div class="is-size-4 has-text-weight-bold mt-2" style="color: ${cRed}; padding-left: 15px !important;">${packets}</div>
+                            </div>
+                        </div>
+                        <div class="column is-12 has-text-right pt-0 pb-0">
+                            <span class="is-size-7 has-text-grey"><i class="far fa-clock mr-1"></i> ${txt.update}: ${upd}</span>
+                        </div>
+                    `;
+
+                    $('#abuseipdb-status-content').html(html);
+                }).fail(function() {
+                    $('#abuseipdb-status-content').html(`<div class="column is-12 has-text-danger">${txt.parseErr}</div>`);
+                });
+            }
+
+            updateAbuseStatus();
+            setInterval(updateAbuseStatus, 60000);
+        });
+    })();
 }
 ```
 
@@ -306,3 +342,6 @@ Everything will now run automatically. Once the blocklists have been fetched and
 ### v1.3.0 (2026-11-21)
 - **Removed Fail2Ban Requirement**: Replaced the Fail2Ban filter and jail setup (`[iplistblock]`) with direct kernel IPSet management via `loadlist.sh` (`hash:net`, `maxelem 1000000`, `timeout 604800` for automatic 7-day expiration).
 - **Added Boot Service (`loadlist-boot.service`)**: Added documentation and setup instructions for the `systemd` oneshot service to automatically load the IP blocklist into the kernel on server reboot.
+### v1.3.0 (2026-11-22)
+- **Light & Dark Mode Support**: Added automatic theme detection based on background luminance so the dashboard widget renders with clear contrast in both Light and Dark mode.
+- **Updated Traffic Labels**: Clarified traffic labels to explicitly reflect blocked traffic (`Blocked Traffic Total` / `Blocked Traffic Today`).
